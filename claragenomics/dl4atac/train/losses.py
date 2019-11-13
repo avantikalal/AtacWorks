@@ -12,7 +12,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from collections import Iterable, OrderedDict
-from claragenomics.dl4atac.train.custom_losses import PearsonLoss
+from claragenomics.dl4atac.train.custom_losses import PearsonLoss, FocalBCELoss
 
 
 class MultiLoss(object):
@@ -68,7 +68,8 @@ class MultiLoss(object):
 
     # binary cross-entropy loss
     def bce(self):
-        loss_func = nn.BCELoss(reduction='mean')
+        #loss_func = nn.BCELoss(reduction='mean')
+        loss_func = FocalBCELoss()
         loss_func = self.to_device(loss_func)
         return loss_func
 

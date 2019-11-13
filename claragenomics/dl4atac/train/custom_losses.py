@@ -10,6 +10,7 @@
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from claragenomics.dl4atac.train.metrics import CorrCoef
 
 class PearsonLoss(nn.Module):
@@ -21,3 +22,20 @@ class PearsonLoss(nn.Module):
         r = CorrCoef()(input, targets)
         r_loss = 1 - r
         return r_loss
+
+class FocalBCELoss(nn.Module):
+
+        def __init__(self):
+            super(FocalBCELoss, self).__init__()
+        
+        def forward(self, input, targets):
+            self.gamma = 2
+            logpt = -F.binary_cross_entropy(input, targets, reduction='none')
+            #print(logpt)
+            pt = torch.exp(logpt)
+            #print(pt)
+            loss_func = -((1-pt)**self.gamma) * logpt
+            #print(loss_func)
+            loss_func = loss_func.mean()
+            #print(loss_func)
+            return loss_func
