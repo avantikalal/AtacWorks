@@ -14,29 +14,41 @@
 import pandas as pd
 
 
-def read_intervals(bed_file):
-    """Function to read genomic intervals from a BED file into a DataFrame.
+def read_intervals(bed_file, stranded=False, skip=0):
+    """Read genomic intervals from a BED file into a DataFrame.
 
     Args:
-        bed_file(str): Path to BED file
+        bed_file: Path to BED file
+        stranded: Strand information included with intervals
 
     Returns:
         df: Pandas DataFrame containing intervals.
 
     """
-    df = pd.read_csv(bed_file, sep='\t', header=None,
+    if stranded:
+        df = pd.read_csv(bed_file, sep='\t', header=None,
+                     names=['chrom', 'start', 'end', 'strand'],
+                     usecols=(0, 1, 2, 3),
+                     dtype={'chrom': str, 'start': int, 'end': int,
+                     'strand': str}, skiprows=args.skip)
+    else:
+        df = pd.read_csv(bed_file, sep='\t', header=None,
                      names=['chrom', 'start', 'end'],
                      usecols=(0, 1, 2),
-                     dtype={'chrom': str, 'start': int, 'end': int})
+                     dtype={'chrom': str, 'start': int, 'end': int},
+                     skiprows=args.skip)
     return df
 
 
 def read_sizes(sizes_file, as_intervals=False):
-    """Function to read chromosome sizes into a DataFrame.
+    """Read chromosome sizes into a DataFrame.
 
     Args:
         sizes_file(str): Path to sizes file
         as_intervals(bool): Format the DataFrame as 0-indexed intervals
+
+    Returns:
+        df: Pandas DataFrame
 
     """
     df = pd.read_csv(sizes_file, sep='\t', header=None, usecols=(0, 1),
@@ -48,3 +60,21 @@ def read_sizes(sizes_file, as_intervals=False):
     else:
         df.columns = ['chrom', 'length']
     return df
+
+
+def read_summits(narrowPeak_file):
+    """Read summits from narrowPeak into a DataFrame.
+
+    Args:
+        narrowPeak_file: Path to narrowPeak file
+
+    Returns:
+        df: Pandas DataFrame
+
+    """
+    df = pd.read_csv(narrowPeak_file, sep='\t', header=None, usecols=(0, 1, 9),
+                     dtype={0: str, 1: int, 9: int},
+                     columns={'chrom', 'start', 'relsummit'})
+    df['start'] = df['start'] + df['relsummit']
+    df['end'] = df['start'] + 1
+    return df.loc[['chrom', 'start', 'end']]
