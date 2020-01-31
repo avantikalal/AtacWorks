@@ -30,6 +30,7 @@ import logging
 
 from claragenomics.io.bedgraphio import df_to_bedGraph
 from claragenomics.io.bigwigio import bedgraph_to_bigwig
+from claragenomics.io.bedio import read_intervals, read_sizes
 
 import pandas as pd
 
@@ -70,19 +71,18 @@ def main():
 
     # Read input files
     _logger.info('Reading input files')
-    peaks = pd.read_csv(args.input, sep='\t', header=None,
-                        usecols=[0, 1, 2], skiprows=args.skip)
-    sizes = pd.read_csv(args.sizes, sep='\t', header=None)
+    peaks = read_intervals(args.input, skip=args.skip)
+    sizes = read_sizes(args.sizes)
 
     # Subset to peaks in sizes file
     # TODO: Move this test into the df_to_bedGraph function
-    peaks_filtered = peaks[peaks[0].isin(sizes[0])].copy()
+    peaks_filtered = peaks[peaks['chrom'].isin(sizes['chrom'])].copy()
     _logger.info('Retaining ' + str(len(peaks_filtered)) + ' of ' +
                  str(len(peaks)) + ' peaks in given chromosomes.')
 
     # Add score of 1 for all peaks
     _logger.info('Adding score')
-    peaks_filtered[3] = 1
+    peaks_filtered['score'] = 1
 
     # Set prefix for output files
     if args.prefix is None:
