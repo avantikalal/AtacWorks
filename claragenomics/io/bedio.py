@@ -52,13 +52,12 @@ def read_sizes(sizes_file, as_intervals=False):
 
     """
     df = pd.read_csv(sizes_file, sep='\t', header=None, usecols=(0, 1),
-                     dtype={0: str, 1: int})
+                     names=['chrom', 'length'],
+                     dtype={'chrom': str, 'length': int})
     if as_intervals:
-        df[2] = [0] * len(df)
-        df.rename(columns={0: 0, 2: 1, 1: 2}, inplace=True)
-        df.columns = ['chrom', 'start', 'end']
-    else:
-        df.columns = ['chrom', 'length']
+        df['start'] = [0] * len(df)
+        df = df[['chrom', 'start', 'length']]
+        df.rename(columns={"length": "end"})
     return df
 
 
@@ -73,8 +72,9 @@ def read_summits(narrowPeak_file):
 
     """
     df = pd.read_csv(narrowPeak_file, sep='\t', header=None, usecols=(0, 1, 9),
-                     dtype={0: str, 1: int, 9: int},
-                     columns={'chrom', 'start', 'relsummit'})
+                     names=['chrom', 'start', 'relsummit'],
+                     dtype={'chrom': str, 'start': int, 'relsummit': int},
+                     skiprows=1)
     df['start'] = df['start'] + df['relsummit']
     df['end'] = df['start'] + 1
-    return df.loc[['chrom', 'start', 'end']]
+    return df[['chrom', 'start', 'end']]

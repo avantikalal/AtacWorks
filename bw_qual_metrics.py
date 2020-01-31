@@ -66,7 +66,8 @@ summits = read_summits(args.peaks)
 
 # Filter peaks
 peaks_drop = peaks[~peaks['chrom'].isin(sizes['chrom'])]
-_logger.info('Discarding ' + len(peaks_drop) + ' outside sizes file.')
+_logger.info('Discarding ' + str(len(
+    peaks_drop)) + ' peaks outside sizes file.')
 peaks = peaks[peaks['chrom'].isin(sizes['chrom'])]
 
 # Filter summits
