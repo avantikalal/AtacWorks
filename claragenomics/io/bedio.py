@@ -30,13 +30,13 @@ def read_intervals(bed_file, stranded=False, skip=0):
                      names=['chrom', 'start', 'end', 'strand'],
                      usecols=(0, 1, 2, 3),
                      dtype={'chrom': str, 'start': int, 'end': int,
-                     'strand': str}, skiprows=args.skip)
+                     'strand': str}, skiprows=skip)
     else:
         df = pd.read_csv(bed_file, sep='\t', header=None,
                      names=['chrom', 'start', 'end'],
                      usecols=(0, 1, 2),
                      dtype={'chrom': str, 'start': int, 'end': int},
-                     skiprows=args.skip)
+                     skiprows=skip)
     return df
 
 
