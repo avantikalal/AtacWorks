@@ -9,9 +9,7 @@
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 #
 
-"""Returns quality metrics for a coverage track in bigWig format
-
-"""
+"""Returns quality metrics for a coverage track in bigWig format."""
 
 # Import requirements
 import argparse
