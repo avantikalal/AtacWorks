@@ -66,12 +66,15 @@ summits = read_summits(args.peaks)
 
 # Filter peaks
 peaks_drop = peaks[~peaks['chrom'].isin(sizes['chrom'])]
+peaks_keep = peaks['chrom'].isin(sizes['chrom'])
 _logger.info('Discarding ' + str(len(
     peaks_drop)) + ' peaks outside sizes file.')
-peaks = peaks[peaks['chrom'].isin(sizes['chrom'])]
+peaks = peaks[peaks_keep]
+peaks.reset_index(drop=True, inplace=True)
 
 # Filter summits
-summits = summits[peaks['chrom'].isin(sizes['chrom'])]
+summits = summits[peaks_keep]
+summits.reset_index(drop=True, inplace=True)
 
 # Number of peaks
 _logger.info('Counting peaks')
@@ -93,6 +96,7 @@ _logger.info('Extracting signal at summits')
 signal_at_summits = extract_bigwig_intervals(summits, args.bw)
 signal_at_summits = np.concatenate(signal_at_summits)
 fc_at_summits = signal_at_summits / mean_signal
+assert(len(fc_at_summits) == num_peaks)
 
 # Number of peaks with fold enrichment over threshold
 _logger.info('Counting peaks with fold enrichment over threshold')

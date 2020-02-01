@@ -57,7 +57,7 @@ def read_sizes(sizes_file, as_intervals=False):
     if as_intervals:
         df['start'] = [0] * len(df)
         df = df[['chrom', 'start', 'length']]
-        df.rename(columns={"length": "end"})
+        df.rename(columns={"length": "end"}, inplace=True)
     return df
 
 
