@@ -110,6 +110,7 @@ if args.sizes is not None:
     _logger.info("Discarding " + str(
         len(sites_out)) + " sites in chromosomes outside the sizes file")
     sites = sites[sites['chrom'].isin(sizes['chrom'])]
+    _logger.info(str(len(sites)) + " sites remaining.")
 
 # Read data
 _logger.info('Extracting signal around ' + str(len(sites)) + ' genomic sites')

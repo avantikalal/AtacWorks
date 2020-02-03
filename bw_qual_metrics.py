@@ -44,6 +44,8 @@ def parse_args():
                         help='Path to chromosome sizes file.')
     parser.add_argument('--peaks', type=str, required=True,
                         help='Path to narrowPeak file with summits')
+    parser.add_argument('--peakbw', type=str, required=True,
+                        help='Path to narrowPeak file in .bw form')
     args = parser.parse_args()
     return args
 
@@ -107,7 +109,8 @@ print("Number of peaks with FC>=20 over global average: {}".format(
 
 # FSIP
 _logger.info('Calculating FSIP')
-signal_in_peaks = extract_bigwig_intervals(peaks, args.bw, stack=False)
-signal_in_peaks = np.concatenate(signal_in_peaks)
+peak_bw = extract_bigwig_intervals(sizes, args.peakbw, stack=False)
+peak_bw = np.concatenate(peak_bw)
+signal_in_peaks = signal[peak_bw == 1]
 fsip = np.sum(signal_in_peaks) / sum_signal
 print("FSIP: {}".format(fsip))
