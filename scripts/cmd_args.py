@@ -166,6 +166,8 @@ def add_train_options(parser):
                         help='relative weight of poisson loss')
     parser.add('--dice_weight', required=True, type=float,
                         help='relative weight of dice loss')
+    parser.add('--bce_weight', required=True, type=float,
+                        help='relative weight of bce loss')
     # validation args
     parser.add('--val_files', required=True, type=str,
                help='list of data files in the form of [file1, file2, '
