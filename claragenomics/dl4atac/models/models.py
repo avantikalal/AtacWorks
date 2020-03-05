@@ -189,6 +189,81 @@ class DenoisingUNet(nn.Module):
         return out_reg, out_cla
 
 
+class PillowNet(nn.Module):
+    """U-net model from PillowNet."""
+
+    def __init__(self, interval_size):
+        """Initialize the class.
+
+        Args:
+            interval_size : Interval size of chromosomes.
+
+        """
+        self.interval_size = interval_size
+        super(DenoisingUNet, self).__init__()
+        self.down1 = PillowNetDownBlock(interval_size, in_channels=in_channels,
+                               out_channels=16)
+        self.down2 = PillowNetDownBlock(interval_size, in_channels=16,
+                               out_channels=32)
+        self.down3 = PillowNetDownBlock(interval_size, in_channels=32,
+                               out_channels=64)
+        self.down4 = PillowNetDownBlock(interval_size, in_channels=64,
+                               out_channels=128)
+        self.down5 = PillowNetDownBlock(interval_size, in_channels=128,
+                               out_channels=256)
+        self.conv5 = ConvAct1d(interval_size, in_channels=256,
+                               out_channels=512)
+        self.up6 = PillowNetUpBlock(interval_size, in_channels=512,
+                           out_channels=256)
+        self.up7 = PillowNetUpBlock(interval_size, in_channels=256,
+                           out_channels=128)
+        self.up8 = PillowNetUpBlock(interval_size, in_channels=128,
+                           out_channels=64)
+        self.up9 = PillowNetUpBlock(interval_size, in_channels=64,
+                           out_channels=32)
+        self.up10 = PillowNetUpBlock(interval_size, in_channels=32,
+                           out_channels=16)
+
+        self.regressor = ConvAct1d(
+            interval_size, in_channels=16, out_channels=1, kernel_size=1,
+            dilation=1, bn=False, afunc='relu')
+        self.classifier = ConvAct1d(
+            interval_size, in_channels=16, out_channels=1, kernel_size=1,
+            dilation=1, bn=False, afunc='sigmoid')
+
+    def forward(self, input):
+        """Forward.
+
+        Args:
+            input: Input data.
+
+        Return:
+            out_reg: Regression output.
+            out_cla: Classification output
+
+        """
+        # for readability, keeping itermediate p1 ~ p4 and x5 ~ x9,
+        # but actually unnecessary and a waste of memory
+        x1, p1 = self.down1(input)
+        x2, p2 = self.down2(p1)
+        x3, p3 = self.down3(p2)
+        x4, p4 = self.down4(p3)
+        x5, p5 = self.down4(p4)
+
+        x6 = self.conv5(p5)
+
+        x7 = self.up6(x6, x5)
+        x8 = self.up7(x7, x4)
+        x9 = self.up8(x8, x3)
+        x10 = self.up9(x9, x2)
+        x11 = self.up9(x10, x1)
+
+        out_reg = self.regressor(x11).squeeze(1)
+        out_cla = torch.sigmoid(
+            self.classifier(x11).squeeze(1))  # (N, 1, L) => (N, L)
+
+        return out_reg, out_cla
+
 # Baseline models
 
 class DenoisingLinear(nn.Module):

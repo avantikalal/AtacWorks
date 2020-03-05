@@ -162,8 +162,10 @@ def add_train_options(parser):
                help='relative weight of mse loss')
     parser.add('--pearson_weight', required=True, type=float,
                help='relative weight of pearson correlation loss')
-    parser.add_argument('--poisson_weight', required=True, type=float,
+    parser.add('--poisson_weight', required=True, type=float,
                         help='relative weight of poisson loss')
+    parser.add('--dice_weight', required=True, type=float,
+                        help='relative weight of dice loss')
     # validation args
     parser.add('--val_files', required=True, type=str,
                help='list of data files in the form of [file1, file2, '
@@ -174,7 +176,7 @@ def add_train_options(parser):
     parser.add('--threshold', required=True, type=float,
                help="probability threshold above which to call peaks. \
                Used for classification metrics")
-    parser.add_argument('--best_metric_choice', required=True,
+    parser.add('--best_metric_choice', required=True,
                         type=str,
                         choices=['BCE', 'MSE', 'Recall',
                                  'Specificity', 'CorrCoef', 'AUROC'],

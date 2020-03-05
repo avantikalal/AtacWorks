@@ -11,7 +11,7 @@
 
 from collections import Iterable, OrderedDict
 
-from claragenomics.dl4atac.custom_losses import PearsonLoss, PoissonLoss
+from claragenomics.dl4atac.custom_losses import *
 
 import torch
 
@@ -122,6 +122,18 @@ class MultiLoss(object):
 
         """
         loss_func = PoissonLoss()
+        loss_func = self.to_device(loss_func)
+        return loss_func
+
+    # Dice loss
+    def dice(self):
+        """Dice loss.
+
+        Return:
+            Custom loss object for Dice loss.
+
+        """
+        loss_func = DiceLoss()
         loss_func = self.to_device(loss_func)
         return loss_func
 

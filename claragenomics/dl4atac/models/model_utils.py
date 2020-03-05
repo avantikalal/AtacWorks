@@ -63,7 +63,7 @@ def model_args_v1(root_dir):
                help='config file path')
     parser.add('--model', required=True, type=str,
                help='model type', choices=('unet', 'resnet', 'linear',
-                                           'logistic', 'fc2', 'fc3'))
+                                           'logistic', 'pillownet'))
     parser.add('--bn', action='store_true', help='batch norm')
     parser.add('--afunc', required=True, type=str,
                help='activation')
@@ -147,6 +147,8 @@ def build_model(rank, interval_size, resume,
         model = DenoisingLogistic(
             interval_size=interval_size, field=model_args.field)
 
+    elif model_args.model == 'pillownet':  # args.task == 'both'
+        model = PillowNet(interval_size=interval_size)
     # TODO: there is a potential problem with loading model on each device
     #  like this. keep an eye on torch.load()'s map_location arg
     if resume or infer or evaluate:

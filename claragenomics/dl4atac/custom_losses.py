@@ -60,3 +60,29 @@ class PoissonLoss(nn.Module):
         """
         loss = torch.mean(input - (targets * torch.log(input + eps)))
         return loss
+
+
+class DiceLoss(nn.Module):
+    """Dice loss definition."""
+
+    def __init__(self):
+        """Initialize class."""
+        super(DiceLoss, self).__init__()
+
+    def forward(self, input, targets, eps=1e-6):
+        """Calculate loss after forward propagation.
+
+        Args:
+            input: array or tensor containing values predicted by the model
+            targets: array or tensor containing labels
+            eps: Epsilon value to add to the loss, to prevent division by 0.
+
+        Return:
+            loss: Value of the Poisson loss.
+
+        """
+        #y_t=(targets>=0.5)
+        #y_p=(input>=0.5)
+        intersection = torch.sum(targets * input)
+        loss=(2. * intersection + eps) / (torch.sum(targets) + torch.sum(inputs) + eps)
+        return loss

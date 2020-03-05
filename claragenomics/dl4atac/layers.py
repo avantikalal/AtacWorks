@@ -294,3 +294,65 @@ class UpBlock(nn.Module):
         x_up = self.conv_act3(x_up)
 
         return x_up
+
+
+
+class PillowNetDownBlock(nn.Module):
+    """U-net down block from PillowNet - 2 conv/activation layers followed by max pool."""
+
+    def __init__(self):
+        """Initialize layer.
+        """
+        super(DownBlock, self).__init__()
+
+        self.conv_act1 = ConvAct1d(
+            interval_size, in_channels, out_channels, kernel_size=11,
+            stride=1, dilation=1, bias=True, bn=False, afunc='relu')
+        self.conv_act2 = ConvAct1d(
+            interval_size, out_channels, out_channels, kernel_size=11,
+            stride=1, dilation=1, bias=True, bn=False, afunc='relu')
+        self.max_pool = nn.MaxPool1d(2)
+
+    def forward(self, input):
+        """Execute layer on input.
+
+        Args:
+            input : Input data.
+
+        """
+        x = self.conv_act1(input)
+        x = self.conv_act2(x)
+        xp = self.max_pool(x)
+
+        return x, xp
+
+
+class PillowNetUpBlock(nn.Module):
+    """U-net up block from PillowNet- upsampling, merge, followed by 2 conv layers."""
+
+    def __init__(self):
+        """Initialize.
+        """
+        super(UpBlock, self).__init__()
+
+        self.conv_act1 = ConvAct1d(
+            interval_size, out_channels * 2, out_channels, 11, stride=1,
+            dilation=1, bias=True, bn=False, afunc='relu')
+        self.conv_act2 = ConvAct1d(
+            interval_size, out_channels, out_channels, 11, stride=1,
+            dilation=1, bias=True, bn=False, afunc='relu')
+
+    def forward(self, x_up, x_down):
+        """Execute layer on input.
+
+        Args:
+            x_up : Input data.
+            x_down: Data from previous layer to concatenate.
+
+        """
+        x_up = F.interpolate(x_up, scale_factor=2, mode='nearest')
+        x_up = torch.cat((x_down, x_up), dim=1)
+        x_up = self.conv_act1(x_up)
+        x_up = self.conv_act2(x_up)
+
+        return x_up

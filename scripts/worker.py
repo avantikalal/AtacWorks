@@ -49,7 +49,7 @@ _logger.setLevel(logging.INFO)
 _logger.addHandler(_handler)
 
 
-def get_losses(task, mse_weight, pearson_weight, gpu, poisson_weight):
+def get_losses(task, mse_weight, pearson_weight, gpu, poisson_weight, dice_weight):
     """Return loss function.
 
     Args:
@@ -67,7 +67,10 @@ def get_losses(task, mse_weight, pearson_weight, gpu, poisson_weight):
         if poisson_weight > 0 else MultiLoss(['mse', 'pearsonloss'],
                                              [mse_weight, pearson_weight],
                                              device=gpu)
-    cla_loss_func = MultiLoss('bce', 1, device=gpu)
+    if dice_weight > 0:
+        cla_loss_func = MultiLoss(['bce', 'dice'], [1, dice_weight], device=gpu)
+    else:
+        cla_loss_func = MultiLoss('bce', 1, device=gpu)
 
     if task == "regression":
         loss_func = reg_loss_func
