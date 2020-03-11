@@ -84,5 +84,5 @@ class DiceLoss(nn.Module):
         #y_t=(targets>=0.5)
         #y_p=(input>=0.5)
         intersection = torch.sum(targets * input)
-        loss=(2. * intersection + eps) / (torch.sum(targets) + torch.sum(inputs) + eps)
+        loss=(2. * intersection + eps) / (torch.sum(targets) + torch.sum(input) + eps)
         return loss

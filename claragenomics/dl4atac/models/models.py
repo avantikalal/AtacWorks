@@ -9,8 +9,7 @@
 #
 """Model definitions."""
 
-from claragenomics.dl4atac.layers import ConvAct1d, DownBlock, \
-    ResBlock, UpBlock, ZeroSamePad1d
+from claragenomics.dl4atac.layers import *
 
 import torch
 import torch.nn as nn
@@ -189,7 +188,8 @@ class DenoisingUNet(nn.Module):
         return out_reg, out_cla
 
 
-class PillowNet(nn.Module):
+
+class PillowNetReg(nn.Module):
     """U-net model from PillowNet."""
 
     def __init__(self, interval_size):
@@ -200,8 +200,8 @@ class PillowNet(nn.Module):
 
         """
         self.interval_size = interval_size
-        super(DenoisingUNet, self).__init__()
-        self.down1 = PillowNetDownBlock(interval_size, in_channels=in_channels,
+        super(PillowNetReg, self).__init__()
+        self.down1 = PillowNetDownBlock(interval_size=interval_size, in_channels=1,
                                out_channels=16)
         self.down2 = PillowNetDownBlock(interval_size, in_channels=16,
                                out_channels=32)
@@ -211,25 +211,24 @@ class PillowNet(nn.Module):
                                out_channels=128)
         self.down5 = PillowNetDownBlock(interval_size, in_channels=128,
                                out_channels=256)
-        self.conv5 = ConvAct1d(interval_size, in_channels=256,
-                               out_channels=512)
-        self.up6 = PillowNetUpBlock(interval_size, in_channels=512,
+        self.conv6 = ConvAct1d(interval_size, in_channels=256,
+                               out_channels=512, kernel_size=11)
+        self.conv7 = ConvAct1d(interval_size, in_channels=512,
+                               out_channels=512, kernel_size=11)
+        self.up8 = PillowNetUpBlock(interval_size, in_channels=512,
                            out_channels=256)
-        self.up7 = PillowNetUpBlock(interval_size, in_channels=256,
+        self.up9 = PillowNetUpBlock(interval_size, in_channels=256,
                            out_channels=128)
-        self.up8 = PillowNetUpBlock(interval_size, in_channels=128,
+        self.up10 = PillowNetUpBlock(interval_size, in_channels=128,
                            out_channels=64)
-        self.up9 = PillowNetUpBlock(interval_size, in_channels=64,
+        self.up11 = PillowNetUpBlock(interval_size, in_channels=64,
                            out_channels=32)
-        self.up10 = PillowNetUpBlock(interval_size, in_channels=32,
+        self.up12 = PillowNetUpBlock(interval_size, in_channels=32,
                            out_channels=16)
 
         self.regressor = ConvAct1d(
             interval_size, in_channels=16, out_channels=1, kernel_size=1,
             dilation=1, bn=False, afunc='relu')
-        self.classifier = ConvAct1d(
-            interval_size, in_channels=16, out_channels=1, kernel_size=1,
-            dilation=1, bn=False, afunc='sigmoid')
 
     def forward(self, input):
         """Forward.
@@ -239,30 +238,99 @@ class PillowNet(nn.Module):
 
         Return:
             out_reg: Regression output.
-            out_cla: Classification output
 
         """
-        # for readability, keeping itermediate p1 ~ p4 and x5 ~ x9,
-        # but actually unnecessary and a waste of memory
         x1, p1 = self.down1(input)
         x2, p2 = self.down2(p1)
         x3, p3 = self.down3(p2)
         x4, p4 = self.down4(p3)
-        x5, p5 = self.down4(p4)
+        x5, p5 = self.down5(p4)
 
-        x6 = self.conv5(p5)
+        x6 = self.conv6(p5)
+        x7 = self.conv7(x6)
 
-        x7 = self.up6(x6, x5)
-        x8 = self.up7(x7, x4)
-        x9 = self.up8(x8, x3)
-        x10 = self.up9(x9, x2)
-        x11 = self.up9(x10, x1)
+        x8 = self.up8(x7, x5)
+        x9 = self.up9(x8, x4)
+        x10 = self.up10(x9, x3)
+        x11 = self.up11(x10, x2)
+        x12 = self.up12(x11, x1)
 
-        out_reg = self.regressor(x11).squeeze(1)
+        out_reg = self.regressor(x12).squeeze(1)
+
+        return out_reg
+
+
+class PillowNetCla(nn.Module):
+    """U-net model from PillowNet."""
+
+    def __init__(self, interval_size):
+        """Initialize the class.
+
+        Args:
+            interval_size : Interval size of chromosomes.
+
+        """
+        self.interval_size = interval_size
+        super(PillowNetCla, self).__init__()
+        self.down1 = PillowNetDownBlock(interval_size=interval_size, in_channels=1,
+                               out_channels=16)
+        self.down2 = PillowNetDownBlock(interval_size, in_channels=16,
+                               out_channels=32)
+        self.down3 = PillowNetDownBlock(interval_size, in_channels=32,
+                               out_channels=64)
+        self.down4 = PillowNetDownBlock(interval_size, in_channels=64,
+                               out_channels=128)
+        self.down5 = PillowNetDownBlock(interval_size, in_channels=128,
+                               out_channels=256)
+        self.conv6 = ConvAct1d(interval_size, in_channels=256,
+                               out_channels=512, kernel_size=11)
+        self.conv7 = ConvAct1d(interval_size, in_channels=512,
+                               out_channels=512, kernel_size=11)
+        self.up8 = PillowNetUpBlock(interval_size, in_channels=512,
+                           out_channels=256)
+        self.up9 = PillowNetUpBlock(interval_size, in_channels=256,
+                           out_channels=128)
+        self.up10 = PillowNetUpBlock(interval_size, in_channels=128,
+                           out_channels=64)
+        self.up11 = PillowNetUpBlock(interval_size, in_channels=64,
+                           out_channels=32)
+        self.up12 = PillowNetUpBlock(interval_size, in_channels=32,
+                           out_channels=16)
+
+        self.classifier = ConvAct1d(
+            interval_size, in_channels=16, out_channels=1, kernel_size=1,
+            dilation=1, bn=False, afunc=None)
+
+    def forward(self, input):
+        """Forward.
+
+        Args:
+            input: Input data.
+
+        Return:
+            out_cla: Classification output
+
+        """
+        x1, p1 = self.down1(input)
+        x2, p2 = self.down2(p1)
+        x3, p3 = self.down3(p2)
+        x4, p4 = self.down4(p3)
+        x5, p5 = self.down5(p4)
+
+        x6 = self.conv6(p5)
+        x7 = self.conv7(x6)
+
+        x8 = self.up8(x7, x5)
+        x9 = self.up9(x8, x4)
+        x10 = self.up10(x9, x3)
+        x11 = self.up11(x10, x2)
+        x12 = self.up12(x11, x1)
+
         out_cla = torch.sigmoid(
-            self.classifier(x11).squeeze(1))  # (N, 1, L) => (N, L)
+            self.classifier(x12).squeeze(1))  # (N, 1, L) => (N, L)
 
-        return out_reg, out_cla
+        return out_cla
+
 
 # Baseline models
 

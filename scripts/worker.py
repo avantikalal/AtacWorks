@@ -49,7 +49,7 @@ _logger.setLevel(logging.INFO)
 _logger.addHandler(_handler)
 
 
-def get_losses(task, mse_weight, pearson_weight, gpu, poisson_weight, dice_weight):
+def get_losses(task, mse_weight, pearson_weight, gpu, poisson_weight, bce_weight, dice_weight):
     """Return loss function.
 
     Args:
@@ -209,7 +209,8 @@ def train_worker(gpu, ngpu_per_node, args, timers=None):
     )
 
     loss_func = get_losses(args.task, args.mse_weight,
-                           args.pearson_weight, gpu, args.poisson_weight)
+                           args.pearson_weight, gpu, args.poisson_weight, 
+                           args.bce_weight, args.dice_weight)
 
     current_best = None
     for epoch in range(args.epochs):
