@@ -54,7 +54,7 @@ def check_mutual_exclusive(
 
 
 def type_or_none_fn(type):
-    """Ensure provided arguments are not defined at the same time.
+    """Generate function to interpret a string as a specific type or None.
 
     Args:
         type: Data type to check for.
@@ -64,7 +64,6 @@ def type_or_none_fn(type):
         else, type(val)
 
     """
-
     def type_or_none(val):
         if str(val) == "None":
             return None
@@ -108,7 +107,7 @@ def add_common_options(parser):
     parser.add('--transform', required=True, type=str, choices=['log', 'None'],
                help='transformation to apply to\
                            coverage tracks before training')
-    parser.add('--layers', type=str,
+    parser.add('--layers', required=True, type=type_or_none_fn(str),
                help='Names of additional layers to read from h5 file \
                    as input, in the form: "[name1, name2]". \
                    Layers will be concatenated to the noisy ATAC-seq signal \
@@ -209,7 +208,7 @@ def add_inference_options(parser):
     parser.add('--sizes_file', required=True, type=str,
                help='chromosome sizes file for the genome. \
                        Chromosome sizes files for hg19 and hg38 are \
-                       given in the example/reference folder.')
+                       given in the data/reference folder.')
     parser.add('--infer_threshold', required=True,
                type=type_or_none_fn(float),
                help='threshold above which to call peaks from the \
