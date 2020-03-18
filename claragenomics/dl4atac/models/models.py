@@ -272,7 +272,7 @@ class PillowNetCla(nn.Module):
         """
         self.interval_size = interval_size
         super(PillowNetCla, self).__init__()
-        self.down1 = PillowNetDownBlock(interval_size=interval_size, in_channels=1,
+        self.down1 = PillowNetDownBlock(interval_size=interval_size, in_channels=2,
                                out_channels=16)
         self.down2 = PillowNetDownBlock(interval_size, in_channels=16,
                                out_channels=32)
