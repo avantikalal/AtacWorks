@@ -103,13 +103,15 @@ def df_to_bedGraph(df, outfile, sizes=None):
     if sizes is not None:
         # Write only entries for the given chromosomes.
         num_drop = sum(~df['chrom'].isin(sizes['chrom']))
-        print("Discarding " + str(num_drop) + " entries outside sizes file.")
+        print("Discarding " + str(num_drop) + " entries outside chromosome sizes file.")
         df = df[df['chrom'].isin(sizes['chrom'])]
-        # Check that no entries exceed chromosome lengths.
+        # Drop entries that exceed chromosome lengths.
         df_sizes = df.merge(sizes, on='chrom')
         excess_entries = df_sizes[
             df_sizes['end'] > df_sizes['length']]
-        assert len(excess_entries) == 0, \
-            "Entries exceed chromosome sizes ({})".format(excess_entries)
+        if len(excess_entries) > 0:
+            print("Trimming {} entries that exceed chromosome lengths").format(len(excess_entries))
+        df = df_sizes[df_sizes['end'] <= df_sizes['length']]
+        df = df.loc[:, ('chrom', 'start', 'end')]
     assert len(df) > 0, "0 entries to write to bedGraph"
     df.to_csv(outfile, sep='\t', header=False, index=False)

@@ -19,6 +19,36 @@ import numpy as np
 import pyBigWig
 
 
+def bigwig_extend_chrom(interval, bw, sizes):
+    """Read values from a bigWig file. If the interval 
+    extends beyond chromosome bounds, fill with zeros.
+
+    Args:
+        interval : containing chrom, start, end.
+        bw : bigWig file object.
+        sizes : dictionary of chromosome sizes.
+
+    Returns:
+        list containing values in the interval, 
+        extended with zeros if necessary.
+
+    """
+    # Get size of the chromosome where the interval belongs
+    chrom_size = sizes[interval[0]]
+    # If the interval exceeds the chromosome size, pad the values on the right with zeros
+    if interval[2] > chrom_size:
+        result = bw.values(interval[0], int(interval[1]), chrom_size)
+        result = result + [0]*(interval[2] - chrom_size)
+    # If the interval starts before 0, pad the values on the left with zeros
+    elif interval[1] < 0:
+        result = bw.values(interval[0], 0, int(interval[2]))
+        result = [0]*(-1*interval[1]) + result
+    # Else simply return the values over the interval
+    else:
+        result = bw.values(interval[0], int(interval[1]), int(interval[2]))
+    return result
+
+
 def extract_bigwig_to_numpy(interval, bw, pad, sizes, dtype='float32'):
     """Read values in an interval from a bigWig file.
 
@@ -33,21 +63,19 @@ def extract_bigwig_to_numpy(interval, bw, pad, sizes, dtype='float32'):
         NumPy array containing values in the interval.
 
     """
+    # If no padding, return values over the interval
     if pad is None:
-        result = bw.values(interval[0], interval[1], interval[2])
+        result = bigwig_extend_chrom(interval, bw, sizes)
+        assert(len(result) == interval[2] - interval[1])
     else:
-        # Add padding on both sides of interval.
-        result = bw.values(interval[0], max(
-            0, interval[1] - pad), min(interval[2] + pad, sizes[interval[0]]))
-        # If padding goes beyond chromosome bounds, fill the empty spaces
-        # with zeros.
-        if interval[1] < pad:
-            left_zero_pad = np.zeros(pad - interval[1])
-            result = np.concatenate([left_zero_pad, result])
-        if interval[2] + pad > sizes[interval[0]]:
-            right_zero_pad = np.zeros(interval[2] + pad - sizes[interval[0]])
-            result = np.concatenate([result, right_zero_pad])
+        # Extend the bounds of the interval by adding padding on both sides
+        padded_interval = interval.copy()
+        padded_interval[1] = interval[1] - pad
+        padded_interval[2] = interval[2] + pad
+        # return values over the padded interval
+        result = bigwig_extend_chrom(padded_interval, bw, sizes)
         assert (len(result) == interval[2] - interval[1] + 2 * pad)
+    # Convert to numpy array of specified dtype 
     result = np.nan_to_num(result)
     result = result.astype(dtype)
     return result

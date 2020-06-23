@@ -156,8 +156,8 @@ if args.nonzero:
 _logger.debug('Collecting %d intervals' % len(intervals))
 
 # Calculate number of batches
-batches_per_epoch = int(np.ceil(len(intervals) / args.batch_size))
-_logger.info('Writing data in ' + str(batches_per_epoch) + ' batches.')
+batches = int(np.ceil(len(intervals) / args.batch_size))
+_logger.info('Writing data in ' + str(batches) + ' batches.')
 
 # Split intervals into batches
 batch_starts = np.array(range(0, len(intervals), args.batch_size))
@@ -169,11 +169,11 @@ output_file_path = os.path.join(args.out_dir, args.prefix + '.h5')
 
 # Write batches to hdf5 file
 _logger.info('Extracting data for each batch and writing to h5 file')
-for i in range(batches_per_epoch):
+for i in range(batches):
 
     # Print current batch
     if i % 10 == 0:
-        _logger.info("batch " + str(i) + " of " + str(batches_per_epoch))
+        _logger.info("batch " + str(i) + " of " + str(batches))
 
     # Create dictionary to store data
     batch_data = {}

@@ -60,7 +60,7 @@ _logger.setLevel(logging.INFO)
 _logger.addHandler(_handler)
 
 
-def get_tiling_intervals(sizes, intervalsize, shift=None):
+def get_tiling_intervals(sizes, intervalsize, shift=None, cutends=False):
     """Produce intervals of given chromosomes.
 
     Tile from start to end of given chromosomes, shifting by given length.
@@ -70,6 +70,7 @@ def get_tiling_intervals(sizes, intervalsize, shift=None):
             with name and length of required chromosomes
         intervalsize: length of intervals
         shift: distance between starts of successive intervals.
+        cutends: Whether to remove intervals that extend beyond chromosome size.
 
     Returns:
         Pandas DataFrame containing chrom, start, and end of tiling intervals.
@@ -86,14 +87,15 @@ def get_tiling_intervals(sizes, intervalsize, shift=None):
     for i in range(len(sizes)):
         chrom = sizes.iloc[i, 0]
         chrend = sizes.iloc[i, 1]
-        starts = range(0, chrend - (intervalsize + 1), shift)
+        starts = range(0, chrend, shift)
         ends = [x + intervalsize for x in starts]
         intervals = intervals.append(pd.DataFrame(
             {'chrom': chrom, 'start': starts, 'end': ends}))
 
-    # Eliminate intervals that extend beyond chromosome size
-    intervals = intervals.merge(sizes, on='chrom')
-    intervals = intervals[intervals['end'] < intervals['length']]
+    if cutends:
+        # Eliminate intervals that extend beyond chromosome size
+        intervals = intervals.merge(sizes, on='chrom')
+        intervals = intervals[intervals['end'] < intervals['length']]
 
     return intervals.loc[:, ('chrom', 'start', 'end')]
 

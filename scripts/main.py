@@ -79,17 +79,17 @@ def check_intervals(intervals_df, sizes_df, h5_file):
         "Intervals file contains chromosomes not in sizes file ({})".format(
             interval_chroms.difference(sizes_chroms))
 
-    # Interval bounds do not exceed chromosome lengths
+    # Interval bounds do not exceed chromosome lengths more than once per chromosome
     intervals_sizes = intervals_df.merge(sizes_df, on='chrom')
     excess_intervals = intervals_sizes[
         intervals_sizes['end'] > intervals_sizes['length']]
-    assert len(excess_intervals) == 0, \
-        "Intervals exceed chromosome sizes in sizes file ({})".format(
+    assert len(excess_intervals) <= len(sizes_df), \
+        "Too many intervals exceed chromosome lengths: ({})".format(
             excess_intervals)
 
 
 def save_to_bedgraph(batch_range, item, task, channel, intervals,
-                     outfile, rounding=None, threshold=None):
+                     outfile, sizes_df, rounding=None, threshold=None):
     """Write out the tracks and peaks to bedGraphs.
 
     Args:
@@ -106,6 +106,7 @@ def save_to_bedgraph(batch_range, item, task, channel, intervals,
     keys, batch = item
     start = batch_range[0]
     end = batch_range[1]
+    print(start, end, channel)
     if task == "both":
         scores = batch[start:end, :, channel]
     else:
@@ -114,6 +115,8 @@ def save_to_bedgraph(batch_range, item, task, channel, intervals,
     if rounding is not None:
         scores = scores.astype('float64')
         # Sometimes np.around doesn't work with float32. To investigate.
+        np.save("test_scores.npy", scores)
+        x = np.around(scores, decimals=rounding)
         scores = np.around(scores, decimals=rounding)
 
     # Apply thresholding only to peaks
@@ -132,7 +135,7 @@ def save_to_bedgraph(batch_range, item, task, channel, intervals,
         # Expand each interval, combine with scores, and contract to smaller
         # intervals
         batch_bg = intervals_to_bg(batch_intervals)
-        df_to_bedGraph(batch_bg, outfile)
+        df_to_bedGraph(batch_bg, outfile, sizes_df)
 
 
 def writer(infer, intervals_file, exp_dir, result_fname,
@@ -168,10 +171,8 @@ def writer(infer, intervals_file, exp_dir, result_fname,
     if not infer:
         assert False, "writer called but infer = False."
 
-    intervals = pd.read_csv(intervals_file, sep='\t', header=None,
-                            names=['chrom', 'start', 'end'],
-                            usecols=(0, 1, 2),
-                            dtype={'chrom': str, 'start': int, 'end': int})
+    intervals = read_intervals(intervals_file)
+    sizes_df = read_sizes(sizes_file)
 
     channels = []
     out_base_path = os.path.join(exp_dir, prefix + "_" + result_fname)
@@ -205,7 +206,7 @@ def writer(infer, intervals_file, exp_dir, result_fname,
                 for channel in channels:
                     with open(outfiles[channel], "a+") as outfile:
                         save_to_bedgraph([start, end], item, task, channel,
-                                         intervals, outfile,
+                                         intervals, outfile, sizes_df,
                                          rounding=rounding[channel],
                                          threshold=infer_threshold)
             else:
