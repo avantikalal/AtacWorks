@@ -209,6 +209,10 @@ def train_worker(gpu, ngpu_per_node, args, timers=None):
                            args.pearson_weight, gpu, args.poisson_weight)
 
     current_best = None
+    if args.binSize is not None:
+        pad = args.pad/args.binSize
+    else:
+        pad = args.pad
     for epoch in range(args.epochs):
         if args.distributed:
             train_sampler.set_epoch(epoch)
@@ -216,7 +220,7 @@ def train_worker(gpu, ngpu_per_node, args, timers=None):
               train_loader=train_loader,
               loss_func=loss_func, optimizer=optimizer, epoch=epoch,
               epochs=args.epochs, clip_grad=args.clip_grad,
-              print_freq=args.print_freq, pad=args.pad,
+              print_freq=args.print_freq, pad=pad,
               distributed=args.distributed, world_size=args.world_size,
               transform=args.transform)
 
@@ -231,7 +235,7 @@ def train_worker(gpu, ngpu_per_node, args, timers=None):
                      model=model, val_loader=val_loader,
                      metrics_reg=metrics_reg, metrics_cla=metrics_cla,
                      world_size=args.world_size, distributed=args.distributed,
-                     best_metric=best_metric, pad=args.pad,
+                     best_metric=best_metric, pad=pad,
                      print_freq=args.print_freq, transform=args.transform)
 
             if rank == 0:

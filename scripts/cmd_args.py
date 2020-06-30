@@ -98,6 +98,9 @@ def add_common_options(parser):
                help="batch_size")
     parser.add('--num_workers', required=True, type=int,
                help="number of workers for dataloader")
+    parser.add('--weights_path', required=True, type=type_or_none_fn(str),
+               help="checkpoint path to load the model from for\
+                   inference or resume training")
     # Dataset args
     parser.add('--pad', required=True, type=type_or_none_fn(int),
                help="Number of additional bases to add as padding \
@@ -112,9 +115,8 @@ def add_common_options(parser):
                    as input, in the form: "[name1, name2]". \
                    Layers will be concatenated to the noisy ATAC-seq signal \
                    in the order supplied.')
-    parser.add('--weights_path', required=True, type=type_or_none_fn(str),
-               help="checkpoint path to load the model from for\
-                   inference or resume training")
+    parser.add('--binSize', required=True, type=int,
+               help='bin size if training data came from binned bigWig files.')
     # dist-env args
     parser.add('--gpu', required=True, type=int,
                help='GPU id to use; preempted by --distributed\

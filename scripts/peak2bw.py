@@ -33,6 +33,7 @@ Example:
 import argparse
 import logging
 import os
+import numpy as np
 
 from atacworks.io.bedgraphio import df_to_bedGraph
 from atacworks.io.bedio import read_intervals, read_sizes
@@ -79,6 +80,8 @@ def parse_args():
                         to skip. Use --skip 1 if the first line \
                         is a header. .narrowPeak files produced \
                         by MACS2 will require --skip 1.')
+    parser.add_argument('--binSize', type=int,
+                        help='bin size for output bigWig')
     args = parser.parse_args()
     return args
 
@@ -107,6 +110,14 @@ def main():
 
     # Write bedGraph
     _logger.info('Writing peaks to bedGraph file')
+
+    if args.binSize is not None:
+        binSize = args.binSize
+        # Extend to span bins
+        peaks['start'] = binSize * np.floor(peaks['start']/binSize)
+        peaks['start'] = peaks['start'].astype('int')
+        peaks['end'] = binSize * np.floor(peaks['end']/binSize)
+        peaks['end'] = peaks['end'].astype('int')
 
     # Note: peaks will be subset to chromosomes in sizes file.
     df_to_bedGraph(peaks, out_bg_name, sizes)

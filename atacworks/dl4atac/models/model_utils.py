@@ -82,7 +82,7 @@ def model_args_v1(root_dir):
                help='config file path')
     parser.add('--model', required=True, type=str,
                help='model type', choices=('unet', 'resnet', 'linear',
-                                           'logistic', 'fc2', 'fc3'))
+                                           'logistic'))
     parser.add('--bn', action='store_true', help='batch norm')
     parser.add('--afunc', required=True, type=str,
                help='activation')
@@ -103,7 +103,7 @@ def model_args_v1(root_dir):
     parser.add('--nfilt_cla', required=True, type=int,
                help='number of filters for classification blocks in resnet')
     parser.add('--field', required=True, type=type_or_none_fn(int),
-               help='receptive field for linear/logistic regression')
+               help='receptive field (in bp) for linear/logistic regression')
     parser.add('--in_channels', required=True, type=int,
                help='number of channels for input data')
 

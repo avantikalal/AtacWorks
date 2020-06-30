@@ -125,6 +125,8 @@ def parse_args():
                         help='Only save intervals with nonzero coverage. \
                         Recommended when encoding training data, as intervals \
                         with zero coverage do not help the model to learn.')
+    parser.add_argument('--binSize', type=int,
+                        help='bin size if input bigWig files are binned.')
     parser.add_argument('--debug', action='store_true',
                         help='Enable debug prints')
     args = parser.parse_args()
@@ -156,8 +158,8 @@ if args.nonzero:
 _logger.debug('Collecting %d intervals' % len(intervals))
 
 # Calculate number of batches
-batches_per_epoch = int(np.ceil(len(intervals) / args.batch_size))
-_logger.info('Writing data in ' + str(batches_per_epoch) + ' batches.')
+batches = int(np.ceil(len(intervals) / args.batch_size))
+_logger.info('Writing data in ' + str(batches) + ' batches.')
 
 # Split intervals into batches
 batch_starts = np.array(range(0, len(intervals), args.batch_size))
@@ -169,11 +171,11 @@ output_file_path = os.path.join(args.out_dir, args.prefix + '.h5')
 
 # Write batches to hdf5 file
 _logger.info('Extracting data for each batch and writing to h5 file')
-for i in range(batches_per_epoch):
+for i in range(batches):
 
     # Print current batch
     if i % 10 == 0:
-        _logger.info("batch " + str(i) + " of " + str(batches_per_epoch))
+        _logger.info("batch " + str(i) + " of " + str(batches))
 
     # Create dictionary to store data
     batch_data = {}
@@ -206,6 +208,16 @@ for i in range(batches_per_epoch):
         batch_data['label_cla'] = extract_bigwig_intervals(
             batch_intervals, args.cleanpeakbw, pad=args.pad
         )
+
+
+    # Binning
+    if args.binSize is not None:
+        print("Binning encoded data")
+        binSize = args.binSize
+        for key in batch_data.keys():
+            batch_data[key] = batch_data[key].take(indices=range(
+                0, batch_data[key].shape[1], binSize), axis=1)
+            _logger.debug(key + " : " + str(batch_data[key].shape))
 
     _logger.debug(len(batch_data))
     _logger.debug("Saving batch " + str(i) + " with keys " + str(
