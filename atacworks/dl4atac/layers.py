@@ -294,3 +294,89 @@ class UpBlock(nn.Module):
         x_up = self.conv_act3(x_up)
 
         return x_up
+
+class ConvTranspose1d(nn.Module):
+    """1D conv transpose layer with same padding.
+    """
+
+    def __init__(self, interval_size, in_channels, out_channels,
+                 kernel_size, stride, afunc=None):
+        """Initialize.
+        Args:
+            interval_size : Genome interval size
+            in_channels : Input channel
+            out_channels : Output channels
+            kernel_size : Filter size
+            stride : Stride for filter
+        """
+        self.interval_size = interval_size
+        super(ConvTranspose1d, self).__init__()
+
+        self.conv_t_layer = nn.ConvTranspose1d(
+            in_channels, out_channels, kernel_size, stride, padding=0)
+
+    def forward(self, x):
+        """Execute layer on input.
+        Args:
+            x : Input data.
+        """
+        x = self.conv_t_layer(x)
+        return x
+
+
+class PillowNetDownBlock(nn.Module):
+    """U-net down block from PillowNet - 2 conv/activation layers followed by max pool."""
+
+    def __init__(self, interval_size, in_channels, out_channels):
+        """Initialize layer.
+        """
+        super(PillowNetDownBlock, self).__init__()
+
+        self.conv_act1 = ConvAct1d(
+            interval_size, in_channels, out_channels, kernel_size=11,
+            stride=1, dilation=1, bias=True, bn=False, afunc='relu')
+        self.conv_act2 = ConvAct1d(
+            interval_size, out_channels, out_channels, kernel_size=11,
+            stride=1, dilation=1, bias=True, bn=False, afunc='relu')
+        self.max_pool = nn.MaxPool1d(2)
+
+    def forward(self, input):
+        """Execute layer on input.
+        Args:
+            input : Input data.
+        """
+        x = self.conv_act1(input)
+        x = self.conv_act2(x)
+        xp = self.max_pool(x)
+
+        return x, xp
+
+
+class PillowNetUpBlock(nn.Module):
+    """U-net up block from PillowNet- upsampling, merge, followed by 2 conv layers."""
+
+    def __init__(self, interval_size, in_channels, out_channels):
+        """Initialize.
+        """
+        super(PillowNetUpBlock, self).__init__()
+        self.transpose1 = ConvTranspose1d(interval_size, in_channels, out_channels,
+                 kernel_size=2, stride=2, afunc=None)
+        self.conv_act1 = ConvAct1d(
+            interval_size, out_channels*2, out_channels, kernel_size=11, stride=1,
+            dilation=1, bias=True, bn=False, afunc='relu')
+        self.conv_act2 = ConvAct1d(
+            interval_size, out_channels, out_channels, kernel_size=11, stride=1,
+            dilation=1, bias=True, bn=False, afunc='relu')
+
+    def forward(self, x_up, x_down):
+        """Execute layer on input.
+        Args:
+            x_up : Input data.
+            x_down: Data from previous layer to concatenate.
+        """
+        x_up = self.transpose1(x_up)
+        x_up = torch.cat((x_down, x_up), dim=1)
+        x_up = self.conv_act1(x_up)
+        x_up = self.conv_act2(x_up)
+
+        return x_up
