@@ -255,3 +255,136 @@ class DenoisingLogistic(nn.Module):
         """
         x = torch.sigmoid(self.denoising_linear(x))
         return x
+
+
+class PillowNetReg(nn.Module):
+    """U-net model from PillowNet."""
+
+    def __init__(self, interval_size):
+        """Initialize the class.
+        Args:
+            interval_size : Interval size of chromosomes.
+        """
+        self.interval_size = interval_size
+        super(PillowNetReg, self).__init__()
+        self.down1 = PillowNetDownBlock(interval_size=interval_size, in_channels=1,
+                               out_channels=16)
+        self.down2 = PillowNetDownBlock(interval_size, in_channels=16,
+                               out_channels=32)
+        self.down3 = PillowNetDownBlock(interval_size, in_channels=32,
+                               out_channels=64)
+        self.down4 = PillowNetDownBlock(interval_size, in_channels=64,
+                               out_channels=128)
+        self.down5 = PillowNetDownBlock(interval_size, in_channels=128,
+                               out_channels=256)
+        self.conv6 = ConvAct1d(interval_size, in_channels=256,
+                               out_channels=512, kernel_size=11)
+        self.conv7 = ConvAct1d(interval_size, in_channels=512,
+                               out_channels=512, kernel_size=11)
+        self.up8 = PillowNetUpBlock(interval_size, in_channels=512,
+                           out_channels=256)
+        self.up9 = PillowNetUpBlock(interval_size, in_channels=256,
+                           out_channels=128)
+        self.up10 = PillowNetUpBlock(interval_size, in_channels=128,
+                           out_channels=64)
+        self.up11 = PillowNetUpBlock(interval_size, in_channels=64,
+                           out_channels=32)
+        self.up12 = PillowNetUpBlock(interval_size, in_channels=32,
+                           out_channels=16)
+
+        self.regressor = ConvAct1d(
+            interval_size, in_channels=16, out_channels=1, kernel_size=1,
+            dilation=1, bn=False, afunc='relu')
+
+    def forward(self, input):
+        """Forward.
+        Args:
+            input: Input data.
+        Return:
+            out_reg: Regression output.
+        """
+        x1, p1 = self.down1(input)
+        x2, p2 = self.down2(p1)
+        x3, p3 = self.down3(p2)
+        x4, p4 = self.down4(p3)
+        x5, p5 = self.down5(p4)
+
+        x6 = self.conv6(p5)
+        x7 = self.conv7(x6)
+
+        x8 = self.up8(x7, x5)
+        x9 = self.up9(x8, x4)
+        x10 = self.up10(x9, x3)
+        x11 = self.up11(x10, x2)
+        x12 = self.up12(x11, x1)
+
+        out_reg = self.regressor(x12).squeeze(1)
+
+        return out_reg
+
+
+class PillowNetCla(nn.Module):
+    """U-net model from PillowNet."""
+
+    def __init__(self, interval_size):
+        """Initialize the class.
+        Args:
+            interval_size : Interval size of chromosomes.
+        """
+        self.interval_size = interval_size
+        super(PillowNetCla, self).__init__()
+        self.down1 = PillowNetDownBlock(interval_size=interval_size, in_channels=2,
+                               out_channels=16)
+        self.down2 = PillowNetDownBlock(interval_size, in_channels=16,
+                               out_channels=32)
+        self.down3 = PillowNetDownBlock(interval_size, in_channels=32,
+                               out_channels=64)
+        self.down4 = PillowNetDownBlock(interval_size, in_channels=64,
+                               out_channels=128)
+        self.down5 = PillowNetDownBlock(interval_size, in_channels=128,
+                               out_channels=256)
+        self.conv6 = ConvAct1d(interval_size, in_channels=256,
+                               out_channels=512, kernel_size=11)
+        self.conv7 = ConvAct1d(interval_size, in_channels=512,
+                               out_channels=512, kernel_size=11)
+        self.up8 = PillowNetUpBlock(interval_size, in_channels=512,
+                           out_channels=256)
+        self.up9 = PillowNetUpBlock(interval_size, in_channels=256,
+                           out_channels=128)
+        self.up10 = PillowNetUpBlock(interval_size, in_channels=128,
+                           out_channels=64)
+        self.up11 = PillowNetUpBlock(interval_size, in_channels=64,
+                           out_channels=32)
+        self.up12 = PillowNetUpBlock(interval_size, in_channels=32,
+                           out_channels=16)
+
+        self.classifier = ConvAct1d(
+            interval_size, in_channels=16, out_channels=1, kernel_size=1,
+            dilation=1, bn=False, afunc=None)
+
+    def forward(self, input):
+        """Forward.
+        Args:
+            input: Input data.
+        Return:
+            out_cla: Classification output
+        """
+        x1, p1 = self.down1(input)
+        x2, p2 = self.down2(p1)
+        x3, p3 = self.down3(p2)
+        x4, p4 = self.down4(p3)
+        x5, p5 = self.down5(p4)
+
+        x6 = self.conv6(p5)
+        x7 = self.conv7(x6)
+
+        x8 = self.up8(x7, x5)
+        x9 = self.up9(x8, x4)
+        x10 = self.up10(x9, x3)
+        x11 = self.up11(x10, x2)
+        x12 = self.up12(x11, x1)
+
+        out_cla = torch.sigmoid(
+            self.classifier(x12).squeeze(1))  # (N, 1, L) => (N, L)
+
+        return out_cla

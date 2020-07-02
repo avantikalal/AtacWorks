@@ -17,9 +17,7 @@ import sys
 import warnings
 
 # module imports
-from atacworks.dl4atac.models.models import DenoisingLinear, \
-    DenoisingLogistic
-from atacworks.dl4atac.models.models import DenoisingResNet, DenoisingUNet
+from atacworks.dl4atac.models.models import *
 
 from atacworks.dl4atac.utils import load_model, myprint
 
@@ -82,7 +80,8 @@ def model_args_v1(root_dir):
                help='config file path')
     parser.add('--model', required=True, type=str,
                help='model type', choices=('unet', 'resnet', 'linear',
-                                           'logistic', 'fc2', 'fc3'))
+                                           'logistic', 'pillownetreg', 
+                                           'pillownetcla'))
     parser.add('--bn', action='store_true', help='batch norm')
     parser.add('--afunc', required=True, type=str,
                help='activation')
