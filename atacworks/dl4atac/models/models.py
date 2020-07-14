@@ -132,8 +132,8 @@ class DenoisingUNet(nn.Module):
         self.up9 = UpBlock(interval_size, in_channels=16, out_channels=8, kernel_size=25)
         self.regressor = ConvAct1d(interval_size, in_channels=8, out_channels=1, kernel_size=1)
         self.down10 = DownBlock(interval_size, in_channels=1, out_channels=15, kernel_size=15, bias=True)
-        self.conv11 = ConvAct1d(interval_size, in_channels=15, out_channels=15, kernel_size=101, dilation=4)
-        self.up12 = UpBlock(interval_size, in_channels=15, out_channels=15, kernel_size=25)
+        self.conv11 = ConvAct1d(interval_size, in_channels=15, out_channels=15, kernel_size=101, dilation=4, bias=True)
+        self.up12 = UpBlock(interval_size, in_channels=15, out_channels=15, kernel_size=25, bias=True)
         self.classifier = ConvAct1d(
             interval_size, in_channels=15, out_channels=1, kernel_size=1, afunc=None)
     def forward(self, input):
