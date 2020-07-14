@@ -110,10 +110,8 @@ class DenoisingResNet(nn.Module):
 
 class DenoisingUNet(nn.Module):
     """U-net model."""
-
     def __init__(self, interval_size, in_channels=1, afunc='relu', bn=False):
         """Initialize the class.
-
         Args:
             interval_size : Interval size of chromosomes.
             in_channels : Number of input channels.
@@ -123,68 +121,45 @@ class DenoisingUNet(nn.Module):
         """
         self.interval_size = interval_size
         super(DenoisingUNet, self).__init__()
-        self.down1 = DownBlock(interval_size, in_channels=in_channels,
-                               out_channels=16, kernel_size=5, bn=bn,
-                               afunc=afunc)
-        self.down2 = DownBlock(interval_size, in_channels=16,
-                               out_channels=32, kernel_size=5, bn=bn,
-                               afunc=afunc)
-        self.down3 = DownBlock(interval_size, in_channels=32,
-                               out_channels=64, kernel_size=25, bn=bn,
-                               afunc=afunc)
-        self.down4 = DownBlock(interval_size, in_channels=64,
-                               out_channels=128, kernel_size=25, bn=bn,
-                               afunc=afunc)
-
-        self.conv5 = ConvAct1d(interval_size, in_channels=128,
-                               out_channels=256,
-                               kernel_size=101, dilation=1, bn=bn, afunc=afunc)
-
-        self.up6 = UpBlock(interval_size, in_channels=256,
-                           out_channels=128, kernel_size=5, bn=bn, afunc=afunc)
-        self.up7 = UpBlock(interval_size, in_channels=128,
-                           out_channels=64, kernel_size=5, bn=bn, afunc=afunc)
-        self.up8 = UpBlock(interval_size, in_channels=64,
-                           out_channels=32, kernel_size=5, bn=bn, afunc=afunc)
-        self.up9 = UpBlock(interval_size, in_channels=32,
-                           out_channels=16, kernel_size=5, bn=bn, afunc=afunc)
-
-        self.regressor = ConvAct1d(
-            interval_size, in_channels=16, out_channels=1, kernel_size=1,
-            dilation=1, bn=bn, afunc=afunc)
+        self.down1 = DownBlock(interval_size, in_channels=in_channels, out_channels=8, kernel_size=25)
+        self.down2 = DownBlock(interval_size, in_channels=8, out_channels=16, kernel_size=25)
+        self.down3 = DownBlock(interval_size, in_channels=16, out_channels=32, kernel_size=25)
+        self.down4 = DownBlock(interval_size, in_channels=32, out_channels=64, kernel_size=25)
+        self.conv5 = ConvAct1d(interval_size, in_channels=64, out_channels=128, kernel_size=101, dilation=4)
+        self.up6 = UpBlock(interval_size, in_channels=128, out_channels=64, kernel_size=25)
+        self.up7 = UpBlock(interval_size, in_channels=64, out_channels=32, kernel_size=25)
+        self.up8 = UpBlock(interval_size, in_channels=32, out_channels=16, kernel_size=25)
+        self.up9 = UpBlock(interval_size, in_channels=16, out_channels=8, kernel_size=25)
+        self.regressor = ConvAct1d(interval_size, in_channels=8, out_channels=1, kernel_size=1)
+        self.down10 = DownBlock(interval_size, in_channels=1, out_channels=15, kernel_size=15, bias=True)
+        self.conv11 = ConvAct1d(interval_size, in_channels=15, out_channels=15, kernel_size=101, dilation=4)
+        self.up12 = UpBlock(interval_size, in_channels=15, out_channels=15, kernel_size=25)
         self.classifier = ConvAct1d(
-            interval_size, in_channels=16, out_channels=1, kernel_size=1,
-            dilation=1, bn=bn, afunc=None)
-
+            interval_size, in_channels=15, out_channels=1, kernel_size=1, afunc=None)
     def forward(self, input):
         """Forward.
-
         Args:
             input: Input data.
-
         Return:
             out_reg: Regression output.
             out_cla: Classification output
-
         """
-        # for readability, keeping itermediate p1 ~ p4 and x5 ~ x9,
-        # but actually unnecessary and a waste of memory
         x1, p1 = self.down1(input)
         x2, p2 = self.down2(p1)
         x3, p3 = self.down3(p2)
         x4, p4 = self.down4(p3)
-
         x5 = self.conv5(p4)
-
         x6 = self.up6(x5, x4)
         x7 = self.up7(x6, x3)
         x8 = self.up8(x7, x2)
-        x9 = self.up9(x8, x1)
-
-        out_reg = self.regressor(x9).squeeze(1)
+        x10 = self.up9(x8, x1)
+        x11 = self.regressor(x10)
+        out_reg = x11.squeeze(1)
+        x12, p12 = self.down10(x11)
+        x13 = self.conv11(p12)
+        x14 = self.up12(x13, x12)
         out_cla = torch.sigmoid(
-            self.classifier(x9).squeeze(1))  # (N, 1, L) => (N, L)
-
+            self.classifier(x14).squeeze(1))  # (N, 1, L) => (N, L)
         return out_reg, out_cla
 
 
